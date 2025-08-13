@@ -38,4 +38,5 @@ export const appConfig: AppConfig = {
     retry: requireNumberEnv("REDIS_RETRY"),
     interval: requireNumberEnv("REDIS_RETRY_INTERVAL"),
   },
+  
 };

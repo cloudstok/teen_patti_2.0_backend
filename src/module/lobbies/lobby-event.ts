@@ -2,7 +2,7 @@ import { Server } from 'socket.io';
 import { insertLobbies } from './lobbies-db';
 import { createLogger } from '../../utilities/logger';
 import { setCurrentLobby } from '../bets/bets-session';
-import { dealGame } from '../game/game';
+import { evaluateHands } from '../game/game';
 import { settleBet } from '../bets/bets-session';
 
 const logger = createLogger('lobbies', 'jsonl');
@@ -26,8 +26,7 @@ const initLobby = async (io: Server): Promise<void> => {
   setCurrentLobby(recurLobbyData);
 
   const start_delay = 15;
-  const result = dealGame();
-  const end_delay = 5;
+  const end_delay = 4;
 
   for (let x = start_delay; x >= 0; x--) {
     io.emit('cards', `${lobbyId}:${x}:STARTING`);
@@ -40,16 +39,26 @@ const initLobby = async (io: Server): Promise<void> => {
   io.emit('cards', `${lobbyId}:0:CALCULATING`);
   await sleep(3000);
 
+  const { result } = evaluateHands()
+  const playerAHand = result.playerAHand
+  const playerBHand = result.playerBHand
+
   recurLobbyData.status = 2;
   setCurrentLobby(recurLobbyData);
-  io.emit('cards', `${lobbyId}:${JSON.stringify(result)}:RESULT`);
+  for (let i = 0; i < 3; i++) {
+    io.emit('cards', `${lobbyId}:${JSON.stringify(playerAHand[i])}:Player A:RESULT`);
+    await sleep(1000);
+    io.emit('cards', `${lobbyId}:${JSON.stringify(playerBHand[i])}:Player B:RESULT`);
+    await sleep(1000);
+  }
 
-  await sleep(8000);
+  io.emit('cards', `${lobbyId}:${1}:ENDED`);
+  await sleep(1000);
   await settleBet(io, result, lobbyId);
 
   recurLobbyData.status = 3;
   setCurrentLobby(recurLobbyData);
-  for (let z = 1; z <= end_delay; z++) {
+  for (let z = 2; z <= end_delay; z++) {
     io.emit('cards', `${lobbyId}:${z}:ENDED`);
     await sleep(1000);
   }

@@ -4,7 +4,8 @@ export const lobbies = `create table if not exists lobbies (
     start_delay INT NOT NULL,
     end_delay INT NOT NULL,
     result json default null,
-    created_at datetime DEFAULT CURRENT_TIMESTAMP
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
+    index idx_lobby_id(lobby_id)
  );`
 
 export const bets = `CREATE TABLE IF NOT EXISTS bets (
@@ -27,9 +28,11 @@ export const settlement = `CREATE TABLE IF NOT EXISTS settlement (
    operator_id varchar(255) DEFAULT NULL,
    bet_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
    userBets TEXT DEFAULT NULL,
-   result varchar(255) NOT NULL,
+   result JSON NOT NULL,
    max_mult DECIMAL(10, 2) DEFAULT 0.00,
    win_amount decimal(10, 2) DEFAULT 0.00,
    created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-   PRIMARY KEY (settlement_id)
+   PRIMARY KEY (settlement_id),
+   index idx_user_operator_id (user_id, operator_id),
+   index idx_user_operator_lobby_id (user_id, operator_id, lobby_id)
  );`

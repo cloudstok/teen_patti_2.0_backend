@@ -5,7 +5,7 @@ import { setCache, getCache } from '../../utilities/redis-connection';
 import { getBetResult, getUserIP, logEventAndEmitResponse } from '../../utilities/helper-function';
 import { createLogger } from '../../utilities/logger';
 import { Server, Socket } from 'socket.io';
-import { BetObject, BetResult, GameResult, LobbiesData, SingleBetData } from '../../interfaces';
+import { BetObject, BetResult, IResult, LobbiesData, SingleBetData } from '../../interfaces';
 import { read } from '../../utilities/db-connection';
 const logger = createLogger('Bets', 'jsonl');
 const settlBetLogger = createLogger('Settlement', 'jsonl');
@@ -24,11 +24,15 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
     }
 
     const parsedPlayerDetails = JSON.parse(playerDetails);
-    const { userId, operatorId, token, game_id, balance } = parsedPlayerDetails;
+    const { user_id, operatorId, token, game_id, balance } = parsedPlayerDetails;
     const lobbyId = Number(betData[0]);
     const userBets = betData[1].split(',');
-    const bet_id = `BT:${lobbyId}:${userId}:${operatorId}`;
+    const bet_id = `BT:${lobbyId}:${user_id}:${operatorId}`;
     const betObj: BetObject = { bet_id, token, socket_id: parsedPlayerDetails.socketId, game_id, lobby_id: lobbyId };
+
+    if (lobbyData.lobbyId !== lobbyId || lobbyData.status !== 1) {
+        return logEventAndEmitResponse(socket, betObj, 'Betting Closed', 'bet');
+    }
 
     let totalBetAmount = 0;
     let isBetInvalid = 0;
@@ -42,11 +46,7 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
 
         if (betAmount <= 0 ||
             betAmount < appConfig.minBetAmount ||
-            betAmount > appConfig.maxBetAmount ||
-            lobbyData.lobbyId !== lobbyId && lobbyData.status !== 0) isBetInvalid = 1;
-
-
-        if (![1, 2].includes(chip)) isBetInvalid = 1;
+            betAmount > appConfig.maxBetAmount) isBetInvalid = 1;
 
         totalBetAmount += betAmount;
         bets.push(data);
@@ -60,6 +60,19 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
         return logEventAndEmitResponse(socket, betObj, 'Insufficient Balance', 'bet');
     }
 
+    const chips = bets.map(bet => bet.chip)
+    if (chips.length > 4) {
+        return logEventAndEmitResponse(socket, betObj, 'Invalid Bet Size', 'bet');
+    }
+
+    if (chips.includes(1) && chips.includes(2)) {
+        return logEventAndEmitResponse(socket, betObj, 'Invalid Bet: Choose A or B', 'bet');
+    }
+
+    if (chips.some(chip => chip > 5)) {
+        return logEventAndEmitResponse(socket, betObj, 'Invalid Bet Choice', 'bet');
+    }
+
     const ip = getUserIP(socket);
 
     Object.assign(betObj, {
@@ -68,14 +81,13 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
         ip
     });
 
-
     const webhookData = await updateBalanceFromAccount({
         id: lobbyData.lobbyId,
         bet_amount: totalBetAmount,
         game_id,
         bet_id,
         ip,
-        user_id: userId
+        user_id
     }, "DEBIT", { game_id, operatorId, token });
 
     if (!webhookData.status) return socket.emit("betError", "Bet Cancelled By Upstream Server");
@@ -94,7 +106,7 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
     await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
 
     socket.emit("info", {
-        user_id: userId,
+        user_id,
         operator_id: operatorId,
         balance: parsedPlayerDetails.balance
     });
@@ -102,7 +114,7 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
     return socket.emit("bet", { message: "Bet Placed Successfully" });
 };
 
-export const settleBet = async (io: Server, result: GameResult, lobbyId: number): Promise<void> => {
+export const settleBet = async (io: Server, result: IResult, lobbyId: number): Promise<void> => {
     try {
 
         if (roundBets.length > 0) {
@@ -118,7 +130,7 @@ export const settleBet = async (io: Server, result: GameResult, lobbyId: number)
                 const betResults: BetResult[] = [];
                 userBets?.forEach(({ betAmount, chip }) => {
                     totalBetAmount += betAmount;
-                    const roundResult = getBetResult(betAmount, chip, result.winner);
+                    const roundResult = getBetResult(betAmount, chip, result);
                     betResults.push(roundResult);
                     if (roundResult.mult > 0) {
                         totalMultiplier += roundResult.status == 'win' ? roundResult.mult : 0;
@@ -175,7 +187,7 @@ export const settleBet = async (io: Server, result: GameResult, lobbyId: number)
 export const getMatchHistory = async (socket: Socket, userId: string, operator_id: string) => {
     try {
         const historyData = await read(`SELECT lobby_id, result, created_at FROM lobbies ORDER BY created_at DESC LIMIT 3`);
-        const getLastWin = await read(`SELECT win_amount FROM settlement WHERE user_id = ? and operator_id = ? ORDER BY created_at DESC LIMIT 1`, [decodeURIComponent(userId), operator_id]);
+        const getLastWin = await read(`SELECT win_amount FROM settlement WHERE user_id = ? and operator_id = ? ORDER BY created_at DESC LIMIT 1`, [userId, operator_id]);
         if(getLastWin && getLastWin.length > 0) socket.emit('lastWin', { myWinningAmount: getLastWin[0].win_amount});
         return socket.emit('historyData', historyData);
     } catch (err) {

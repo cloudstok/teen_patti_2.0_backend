@@ -1,5 +1,8 @@
 import amqp, { Channel, Options } from "amqplib";
-import { createLogger } from "../utilities/logger";
+import { createLogger } from "./logger";
+import { config } from "dotenv";
+
+config({ path: ".env" })
 
 const rabbitMQLogger = createLogger("Queue");
 
@@ -11,14 +14,14 @@ const AMQP_CONNECTION_STRING = process.env.AMQP_CONNECTION_STRING;
 const AMQP_EXCHANGE_NAME = process.env.AMQP_EXCHANGE_NAME;
 
 if (!AMQP_CONNECTION_STRING || !AMQP_EXCHANGE_NAME) {
-    throw new Error("Environment variables AMQP_CONNECTION_STRING or AMQP_EXCHANGE_NAME are not set.");
+    throw new Error('Environment variables AMQP_CONNECTION_STRING or AMQP_EXCHANGE_NAME are not set');
 }
 
 const exchange = AMQP_EXCHANGE_NAME;
 
 export const initQueue = async (): Promise<void> => {
     await connect();
-};
+}
 
 export const connect = async (): Promise<void> => {
     if (connected && pubChannel && subChannel) return;
@@ -26,40 +29,42 @@ export const connect = async (): Promise<void> => {
     try {
         rabbitMQLogger.info("⌛️ Connecting to Rabbit-MQ Server", AMQP_CONNECTION_STRING.split("@")[1]);
         const connection = await amqp.connect(AMQP_CONNECTION_STRING);
-
         rabbitMQLogger.info("✅ Rabbit MQ Connection is ready");
 
         [pubChannel, subChannel] = await Promise.all([
             connection.createChannel(),
-            connection.createChannel(),
+            connection.createChannel()
         ]);
-
         await pubChannel.assertExchange(exchange, "x-delayed-message", {
             autoDelete: false,
             durable: true,
-            arguments: { "x-delayed-type": "direct" },
-        } as Options.AssertExchange);
+            arguments: { "x-delayed-type": "direct" }
+        }) as Options.AssertExchange
 
-        pubChannel.removeAllListeners("close");
-        pubChannel.removeAllListeners("error");
-        subChannel.removeAllListeners("close");
-        subChannel.removeAllListeners("error");
+        pubChannel.removeAllListeners('close');
+        pubChannel.removeAllListeners('error');
+        subChannel.removeAllListeners('close');
+        subChannel.removeAllListeners('error');
 
-        pubChannel.on("close", async () => {
-            console.error("pubChannel Closed");
+        pubChannel.on('close', async () => {
+            console.error('Publish Channel Closed');
             pubChannel = null;
             connected = false;
-        });
+        })
 
-        subChannel.on("close", async () => {
-            console.error("subChannel Closed");
+        pubChannel.on('error', (msg: unknown) => {
+            console.error(`Publish Channel Error: `, msg);
+        })
+
+        subChannel.on('close', async () => {
+            console.error('Subscribe Channel Closed');
             subChannel = null;
             connected = false;
             setTimeout(() => initQueue(), 1000);
         });
 
         pubChannel.on("error", async (msg: unknown) => {
-            console.error("pubChannel Error", msg);
+            console.error("Publish Channel Error", msg);
         });
 
         subChannel.on("error", async (msg: unknown) => {
@@ -68,11 +73,13 @@ export const connect = async (): Promise<void> => {
 
         rabbitMQLogger.info("🛸 Created RabbitMQ Channel successfully");
         connected = true;
-    } catch (error: any) {
-        rabbitMQLogger.error(error);
+
+    } catch (err: any) {
+        rabbitMQLogger.error(err);
         rabbitMQLogger.error("Not connected to MQ Server");
     }
-};
+
+}
 
 export const sendToQueue = async (
     ex: string,
@@ -85,11 +92,10 @@ export const sendToQueue = async (
         if (!pubChannel || (pubChannel as any).connection?._closing) {
             await connect();
         }
-
-        if (!pubChannel) throw new Error("Publisher channel not initialized");
+        if (!pubChannel) throw new Error('Publish Channel is not initiated');
 
         await pubChannel.assertQueue(queueName, { durable: true });
-        await pubChannel.bindQueue(queueName, exchange, queueName); // Binding for simplicity
+        await pubChannel.bindQueue(queueName, exchange, queueName);
 
         pubChannel.publish(
             exchange,
@@ -98,15 +104,17 @@ export const sendToQueue = async (
             {
                 headers: {
                     "x-delay": delay,
-                    "x-retries": retries,
+                    "x-retries": retries
                 },
-                persistent: true,
+                persistent: true
             } as Options.Publish
         );
 
         rabbitMQLogger.info(
             `Message sent to ${queueName} queue on exchange ${exchange} with data ${JSON.stringify(message)}`
         );
+
+
     } catch (error: any) {
         console.error(error);
         rabbitMQLogger.error(

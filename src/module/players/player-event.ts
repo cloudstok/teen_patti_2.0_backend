@@ -14,16 +14,16 @@ export const getUserDataFromSource = async (
   game_id: string
 ): Promise<FinalUserData | false | undefined> => {
   try {
-    const response = await axios.get(`${process.env.service_base_url}/service/user/detail`, {
+    const response = await axios.get(`${process.env.BASE_URL}/service/user/detail`, {
       headers: {
-        token: token,
-      },
+        token
+      }
     });
 
     const userData: RawUserData | undefined = response?.data?.user;
 
     if (userData) {
-      const userId = encodeURIComponent(userData.user_id);
+      const userId = userData.user_id;
       const { operatorId } = userData;
       const id = `${operatorId}:${userId}`;
       const image = getImageValue(id);

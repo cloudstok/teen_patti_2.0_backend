@@ -1,7 +1,18 @@
-export interface GameResult {
-    1: string[];
-    2: string[];
-    winner: 1 | 2;
+export type TCard = {
+    suit: string;
+    num: number;
+};
+
+export type THandType = 'high_card' | 'three_of_kind_ace' | 'three_of_a_kind' | 'straight_flush' | 'straight' | 'flush' | 'pair' | 'royal_flush' | 'four_of_a_kind' | 'full_house' | 'no_hand_match';
+
+export interface IResult {
+    playerAHand: TCard[];
+    playerBHand: TCard[];
+    playerAHandType: THandType;
+    playerBHandType: THandType;
+    bonusHand: THandType;
+    winner: 0 | 1 | 2;
+    bonusWinner: number;
 };
 
 export type BetResult = {

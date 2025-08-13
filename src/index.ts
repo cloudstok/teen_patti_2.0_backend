@@ -6,7 +6,7 @@ import { initSocket } from './socket';
 import { routes } from './router/routes';
 import dotenv from 'dotenv';
 import { createLogger } from './utilities/logger';
-import { checkDatabaseConnection, createTables } from './utilities/db-connection';
+import { checkDatabaseConnection, createTable } from './utilities/db-connection';
 import { initializeRedis } from './utilities/redis-connection';
 import { connect } from './utilities/amqp';
 
@@ -15,7 +15,7 @@ const port = process.env.PORT || 4200;
 const logger = createLogger('Server');
 
 const startServer = async () => {
-    await Promise.all([checkDatabaseConnection(), initializeRedis(), connect(), createTables()]);
+    await Promise.all([checkDatabaseConnection(), initializeRedis(), connect(), createTable()]);
 
     const app = express();
     const server = http.createServer(app);

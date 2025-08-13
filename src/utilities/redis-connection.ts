@@ -64,12 +64,8 @@ export const initializeRedis = async (): Promise<RedisClient> => {
       await new Promise(res => setTimeout(res, retryInterval));
     }
   }
-
-  // Should never reach here
   throw new Error('Unable to initialize Redis');
 };
-
-// Redis Operations
 
 export const setCache = async (key: string, value: string, expiration: number = 3600 * 16): Promise<void> => {
   if (!redisClient) redisClient = await initializeRedis();

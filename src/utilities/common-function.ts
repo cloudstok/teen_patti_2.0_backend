@@ -25,48 +25,50 @@ export const generateUUIDv7 = (): string => {
 
 export const updateBalanceFromAccount = async (data: BetsData, key: WebhookKey, playerDetails: PlayerDetails): Promise<AccountsResult> => {
     try {
+    
         const webhookData = await prepareDataForWebhook({ ...data, game_id: playerDetails.game_id }, key);
         if (!webhookData) return { status: false, type: key };
-
+   
         if (key === 'CREDIT') {
             await sendToQueue('', 'games_cashout', JSON.stringify({ ...webhookData, operatorId: playerDetails.operatorId, token: playerDetails.token }));
             return { status: true, type: key };
         };
+
 
         data.txn_id = webhookData.txn_id;
         const sendRequest = await sendRequestToAccounts(webhookData, playerDetails.token);
         if (!sendRequest) return { status: false, type: key };
 
         return { status: true, type: key, txn_id: data.txn_id };
-    } catch (err) {
-        console.error(`Err while updating Player's balance is`, err);
+    } catch (err: any) {
+        console.error(`Err while updating Player's balance is`, err.message);
         return { status: true, type: key };
     }
 }
 
 export const sendRequestToAccounts = async (webhookData: WebhookData, token: string): Promise<Boolean> => {
     try {
-        const url = process.env.service_base_url;
+        const url = process.env.BASE_URL;
+
         if (!url) throw new Error('Service base URL is not defined');
 
-        let clientServerOptions: AxiosRequestConfig = {
+        let clientServerOption: AxiosRequestConfig = {
             method: 'POST',
             url: `${url}/service/operator/user/balance/v2`,
             headers: {
                 token
             },
             data: webhookData,
-            timeout: 1000 * 5
-        };
-
-        const data = (await axios(clientServerOptions))?.data;
-        thirdPartyLogger.info(JSON.stringify({ logId: generateUUIDv7(), req: clientServerOptions, res: data }));
+            timeout: 5000
+        }
+        const data = (await axios(clientServerOption))?.data;
+        thirdPartyLogger.info(JSON.stringify({ logId: generateUUIDv7(), req: clientServerOption, res: data }));
 
         if (!data.status) return false;
 
         return true;
     } catch (err: any) {
-        console.error(`Err while sending request to accounts is:::`, err?.response?.data);
+        console.error(`Err while sending request to accounts is::: ${err.message}`);
         failedThirdPartyLogger.error(JSON.stringify({ logId: generateUUIDv7(), req: { webhookData, token }, res: err?.response?.status }));
         return false;
     }
@@ -82,7 +84,7 @@ export const prepareDataForWebhook = async (betObj: BetsData, key: WebhookKey): 
             txn_id: generateUUIDv7(),
             ip,
             game_id,
-            user_id: decodeURIComponent(user_id)
+            user_id
         };
 
         if (key == 'DEBIT') return {
@@ -100,8 +102,8 @@ export const prepareDataForWebhook = async (betObj: BetsData, key: WebhookKey): 
             txn_type: 1
         }
         else return baseData;
-    } catch (err) {
-        console.error(`[ERR] while trying to prepare data for webhook is::`, err);
+    } catch (err: any) {
+        console.error(`[ERR] while trying to prepare data for webhook is::`, err.message);
         return false;
     }
 };

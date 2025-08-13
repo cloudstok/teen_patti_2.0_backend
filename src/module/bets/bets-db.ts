@@ -14,7 +14,7 @@ export const addSettleBet = async (settlements: Settlement[]): Promise<void> => 
         finalData.push([
           bet_id,
           lobby_id,
-          decodeURIComponent(user_id),
+          user_id,
           operator_id,
           Number(totalBetAmount).toFixed(2),
           JSON.stringify(userBets),
@@ -45,7 +45,7 @@ export const insertBets = async (data: BetData): Promise<void> => {
     await write(SQL_INSERT_BETS, [
       bet_id,
       lobby_id,
-      decodeURIComponent(user_id),
+      user_id,
       operator_id,
       Number(totalBetAmount).toFixed(2),
       JSON.stringify(userBets)

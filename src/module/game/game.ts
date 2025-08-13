@@ -1,139 +1,176 @@
-import { GameResult } from "../../interfaces";
+import { IResult, TCard, THandType } from "../../interfaces";
 
-const SUITS = ['S', 'H', 'D', 'C'] as const;
-const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] as const;
 
-type Suit = typeof SUITS[number];
-type Rank = typeof RANKS[number];
+const suits = ['H', 'S', 'C', 'D'];
 
-interface Card {
-    rank: Rank;
-    suit: Suit;
-}
-
-type Hand = [Card, Card, Card];
-
-type HandType = 'high-card' | 'pair' | 'flush' | 'straight' | 'straight-flush' | 'trio';
-
-const HAND_RANK_ORDER: Record<HandType, number> = {
-    'high-card': 1,
-    'pair': 2,
-    'flush': 3,
-    'straight': 4,
-    'straight-flush': 5,
-    'trio': 6,
+function createDeck(): TCard[] {
+    const deck: TCard[] = [];
+    for (let suit of suits) {
+        for (let num = 2; num <= 14; num++) {
+            deck.push({ suit, num });
+        }
+    };
+    return deck
 };
 
-function createDeck(): Card[] {
-    const deck: Card[] = [];
-    for (const suit of SUITS) {
-        for (const rank of RANKS) {
-            deck.push({ rank, suit });
+function shuffleDeck(deck: TCard[]): TCard[] {
+    for (let j = deck.length - 1; j > 0; j--) {
+        const k = Math.floor(Math.random() * (j + 1));
+        [deck[j], deck[k]] = [deck[k], deck[j]];
+    }
+    return deck
+}
+
+function getHandTypes(hand: TCard[]): THandType {
+    const nums = hand.map(card => card.num).sort((a, b) => a - b);
+    const suitsDrawn = hand.map(card => card.suit);
+
+    const [num1, num2, num3] = nums;
+    const flush = suitsDrawn[0] === suitsDrawn[1] && suitsDrawn[1] === suitsDrawn[2]
+    const straight = num2 === num1 + 1 && num3 === num2 + 1;
+    const threeOfKindAce = num1 === 1 && num2 === 1 && num3 === 1;
+    const threeOfKind = num1 === num2 && num2 === num3;
+    const pair = num1 === num2 || num2 === num3 || num1 === num3;
+    const straightFlush = flush && straight;
+
+    let handType: THandType = 'high_card';
+    if (threeOfKindAce) handType = 'three_of_kind_ace';
+    if (threeOfKind) handType = 'three_of_a_kind';
+    else if (straightFlush) handType = 'straight_flush';
+    else if (straight) handType = 'straight';
+    else if (flush) handType = 'flush';
+    else if (pair) handType = 'pair';
+    return handType;
+};
+
+export function evaluateHands():{result:IResult} {
+    const deck = shuffleDeck(createDeck());
+    let hand: TCard[] = [];
+    const randomCards: string[] = [];
+
+    while (hand.length < 6) {
+        const card = deck[Math.floor(Math.random() * 52)]
+        const concat = `${card.num}+${card.suit}`;
+        if (!randomCards.includes(concat)) {
+            randomCards.push(concat);
+            hand.push(card);
         }
     }
-    return deck;
-}
 
-function shuffle(deck: Card[]): Card[] {
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
+    const [playerAHand, playerBHand] = [hand.slice(0, 3), hand.slice(3, 6)]
+
+    const playerAHandType: THandType = getHandTypes(playerAHand);
+    const playerBHandType: THandType = getHandTypes(playerBHand);
+    const bonusHand: THandType = SixCardHandType(hand);
+
+     let result:IResult = {
+        playerAHand,
+        playerBHand,
+        playerAHandType,
+        playerBHandType,
+        bonusHand,
+        winner: 0,   // 1 => Player A or 2 => Player B , 0 => No winner(default)
+        bonusWinner: 0
     }
-    return deck;
-}
 
-function rankValue(card: Card): number {
-    return RANKS.indexOf(card.rank);
-}
+    const handRanks = {
+        'no_hand_match': 0,
+        'high_card': 1,
+        'pair': 2,
+        'flush': 3,
+        'straight': 4,
+        'straight_flush': 5,
+        'three_of_a_kind': 6,
+        'three_of_kind_ace': 7,
+        'four_of_a_kind': 8,
+        'full_house': 9,
+        'royal_flush': 10
+    }
 
-function getHandType(cards: Hand): HandType {
-    const values = cards.map(rankValue).sort((a, b) => a - b);
-    if (values[0] == 0 && values[1] == 1 && values[2] == 12) values[2] = 2;
-    const suits = cards.map(card => card.suit);
-    const isFlush = suits.every(suit => suit === suits[0]);
-    const isStraight = values[2] - values[0] === 2 && new Set(values).size === 3;
-    const isPair = new Set(values).size === 2;
-    const isTrio = new Set(values).size === 1;
+    result.playerAHandType = playerAHandType;
+    result.playerBHandType = playerBHandType;
+    result.bonusHand = bonusHand;
 
-    if (isTrio) return 'trio';
-    if (isStraight && isFlush) return 'straight-flush';
-    if (isStraight) return 'straight';
-    if (isFlush) return 'flush';
-    if (isPair) return 'pair';
-    return 'high-card';
-}
+    const rankA = handRanks[playerAHandType];
+    const rankB = handRanks[playerBHandType];
+    const bonusRank = handRanks[bonusHand];
 
-function compareHands(handA: Hand, handB: Hand): 'Player A' | 'Player B' | 'tie' {
-    const typeA = getHandType(handA);
-    const typeB = getHandType(handB);
-    const rankA = HAND_RANK_ORDER[typeA];
-    const rankB = HAND_RANK_ORDER[typeB];
-
-    if (rankA < rankB) return 'Player A';
-    if (rankB < rankA) return 'Player B';
-
-    const valuesA = handA.map(rankValue).sort((a, b) => b - a);
-    const valuesB = handB.map(rankValue).sort((a, b) => b - a);
-
-    if (typeA === 'pair' || typeA === 'trio') {
-        const getRepeatedValue = (values: number[]): number => {
-            const countMap: Record<number, number> = {};
-            for (const val of values) {
-                countMap[val] = (countMap[val] || 0) + 1;
-            }
-            return +Object.keys(countMap).find(k => countMap[+k] > 1)!;
-        };
-
-        const pairValA = getRepeatedValue(valuesA);
-        const pairValB = getRepeatedValue(valuesB);
-
-        if (pairValA < pairValB) return 'Player A';
-        if (pairValB < pairValA) return 'Player B';
-        if (pairValA == pairValB) {
-            for (let i = 0; i < 3; i++) {
-                if (valuesA[i] < valuesB[i]) return 'Player A';
-                if (valuesB[i] < valuesA[i]) return 'Player B';
-            }
-        }
-    } else {
+    if (bonusRank) result.bonusWinner = bonusRank
+    if (rankA > rankB) result.winner = 1
+    else if (rankA < rankB) result.winner = 2
+    else if (rankA == rankB) {
+        const playerASuits = playerAHand.map(player => player.suit);
+        const playerBSuits = playerBHand.map(player => player.suit);
+        const sortedplayerANums = playerAHand.map(card => card.num).sort((a, b) => b - a);
+        const sortedplayerBNums = playerBHand.map(card => card.num).sort((a, b) => b - a);
         for (let i = 0; i < 3; i++) {
-            if (valuesA[i] < valuesB[i]) return 'Player A';
-            if (valuesB[i] < valuesA[i]) return 'Player B';
+            if (sortedplayerANums[i] > sortedplayerBNums[i]) result.winner = 1;
+            else if (sortedplayerBNums[i] > sortedplayerANums[i]) result.winner = 2;
+            else if (sortedplayerANums[i] == sortedplayerBNums[i]) {
+                const suitPreference: Record<string, number> = {
+                    'S': 4,
+                    'H': 3,
+                    'D': 2,
+                    'C': 1
+                }
+                if (suitPreference[playerASuits[i]] > suitPreference[playerBSuits[i]]) result.winner = 1
+                else if (suitPreference[playerASuits[i]] < suitPreference[playerBSuits[i]]) result.winner = 2
+            }
+        }
+    }
+    return {
+        result
+    }
+};
+
+// 6 HAND BONUS
+function SixCardHandType(hand: TCard[]) {
+    const nums = hand.map(card => card.num).sort((a, b) => a - b);
+    const suits = ['H', 'S', 'C', 'D'];
+
+    const royalFlush = suits.some(suit =>
+        [10, 11, 12, 13, 14].every(num =>
+            hand.some(card => card.suit === suit && card.num === num)
+        )
+    );
+
+    const flush = suits.some(suit =>
+        hand.filter(card => card.suit === suit).length >= 5
+    );
+
+    const uniqueNums = [...new Set(nums)];
+    let straightCount = 1;
+    let straight = false;
+
+    for (let i = 0; i < uniqueNums.length - 1; i++) {
+        if (uniqueNums[i + 1] === uniqueNums[i] + 1) {
+            straightCount++;
+            if (straightCount >= 5) {
+                straight = true;
+                break;
+            }
         }
     }
 
-    const suitPriority: Record<Suit, number> = {
-        'D': 1,
-        'C': 2,
-        'H': 3,
-        'S': 4,
-    };
+    const cardNumberFrequency: Record<number, number> = {};
+    hand.forEach(card => {
+        cardNumberFrequency[card.num] = (cardNumberFrequency[card.num] || 0) + 1;
+    });
 
-    const minSuitA = Math.min(...handA.map(card => suitPriority[card.suit]));
-    const minSuitB = Math.min(...handB.map(card => suitPriority[card.suit]));
+    const counts = Object.values(cardNumberFrequency);
+    const fourOfKind = counts.includes(4);
+    const threeOfKind = counts.includes(3);
+    const pair = counts.includes(2);
+    const fullHouse = threeOfKind && pair;
 
-    if (minSuitA < minSuitB) return 'Player A';
-    if (minSuitB < minSuitA) return 'Player B';
+    let handType: THandType = 'no_hand_match';
+    if (royalFlush) handType = 'royal_flush';
+    else if (straight && flush) handType = 'straight_flush';
+    else if (fourOfKind) handType = 'four_of_a_kind';
+    else if (fullHouse) handType = 'full_house';
+    else if (flush) handType = 'flush';
+    else if (straight) handType = 'straight';
+    else if (threeOfKind) handType = 'three_of_a_kind';
+    return handType;
 
-    const sortedHandA = handA.sort((a, b) => rankValue(b) - rankValue(a));
-    const sortedHandB = handB.sort((a, b) => rankValue(b) - rankValue(a));
-
-    if (suitPriority[sortedHandA[0].suit] < suitPriority[sortedHandB[0].suit]) return 'Player A';
-    if (suitPriority[sortedHandB[0].suit] < suitPriority[sortedHandA[0].suit]) return 'Player B';
-
-    return 'tie';
-};
-
-export function dealGame(): GameResult {
-    const deck = shuffle(createDeck());
-    const handA: Hand = [deck[0], deck[1], deck[2]];
-    const handB: Hand = [deck[3], deck[4], deck[5]];
-
-    const winner = compareHands(handA, handB);
-
-    return {
-        1: handA.map(e => `${e.rank}-${e.suit}`),
-        2: handB.map(e => `${e.rank}-${e.suit}`),
-        winner: winner === 'Player A' ? 1 : 2,
-    };
 };
