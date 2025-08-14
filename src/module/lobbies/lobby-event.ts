@@ -42,18 +42,28 @@ const initLobby = async (io: Server): Promise<void> => {
   const { result } = evaluateHands()
   const playerAHand = result.playerAHand
   const playerBHand = result.playerBHand
+  const playerAHandType = result.playerAHandType
+  const playerBHandType = result.playerBHandType
+  const bonusHandType = result.bonusHand
+  const winner = result.winner
+
 
   recurLobbyData.status = 2;
   setCurrentLobby(recurLobbyData);
+  let pA = [];
+  let pB = [];
   for (let i = 0; i < 3; i++) {
-    io.emit('cards', `${lobbyId}:${JSON.stringify(playerAHand[i])}:Player A:RESULT`);
+    pA.push(Object.values(playerAHand[i]).join(""))
+    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:Player Cards:RESULT`);
     await sleep(1000);
-    io.emit('cards', `${lobbyId}:${JSON.stringify(playerBHand[i])}:Player B:RESULT`);
+    pB.push(Object.values(playerBHand[i]).join(""))
+    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:Player Cards:RESULT`);
     await sleep(1000);
-  }
-
-  io.emit('cards', `${lobbyId}:${1}:ENDED`);
+  };
+  // result emit
+  io.emit('result', `${lobbyId}:${JSON.stringify({ playerAHandType, playerBHandType, bonusHandType, winner })}:Card Result: RESULT`)
   await sleep(1000);
+  io.emit('cards', `${lobbyId}:${1}:ENDED`);
   await settleBet(io, result, lobbyId);
 
   recurLobbyData.status = 3;
@@ -71,7 +81,12 @@ const initLobby = async (io: Server): Promise<void> => {
     result,
   };
 
-  io.emit('history', JSON.stringify(history));
+  io.emit('history', {
+    time: history.time,
+    lobbyId: history.lobbyId,
+    result: history.result
+  });
+
   logger.info(JSON.stringify(history));
   await insertLobbies(history);
 

@@ -1,4 +1,4 @@
-import { IResult, TCard, THandType } from "../../interfaces";
+import { IResult, TCard, THandType, THandTypeResult } from "../../interfaces";
 
 
 const suits = ['H', 'S', 'C', 'D'];
@@ -21,29 +21,60 @@ function shuffleDeck(deck: TCard[]): TCard[] {
     return deck
 }
 
-function getHandTypes(hand: TCard[]): THandType {
-    const nums = hand.map(card => card.num).sort((a, b) => a - b);
-    const suitsDrawn = hand.map(card => card.suit);
+const toCardString = (c: TCard) => `${c.suit}${c.num}`;
 
-    const [num1, num2, num3] = nums;
-    const flush = suitsDrawn[0] === suitsDrawn[1] && suitsDrawn[1] === suitsDrawn[2]
-    const straight = num2 === num1 + 1 && num3 === num2 + 1;
-    const threeOfKindAce = num1 === 1 && num2 === 1 && num3 === 1;
-    const threeOfKind = num1 === num2 && num2 === num3;
-    const pair = num1 === num2 || num2 === num3 || num1 === num3;
+function getHandTypes(hand: TCard[]): { handType: THandType; winningCards: string[] } {
+
+    const sortedHand = [...hand].sort((a, b) => a.num - b.num);
+
+    const [card1, card2, card3] = sortedHand;
+    const flush = card1.suit === card2.suit && card2.suit === card3.suit;
+    const straight = card2.num === card1.num + 1 && card3.num === card2.num + 1;
+    const threeOfKindAce = card1.num === 1 && card2.num === 1 && card3.num === 1;
+    const threeOfKind = card1.num === card2.num && card2.num === card3.num;
+    const pair = card1.num === card2.num || card2.num === card3.num || card1.num === card3.num;
     const straightFlush = flush && straight;
 
     let handType: THandType = 'high_card';
-    if (threeOfKindAce) handType = 'three_of_kind_ace';
-    if (threeOfKind) handType = 'three_of_a_kind';
-    else if (straightFlush) handType = 'straight_flush';
-    else if (straight) handType = 'straight';
-    else if (flush) handType = 'flush';
-    else if (pair) handType = 'pair';
-    return handType;
-};
+    let winningCards: TCard[] = [];
 
-export function evaluateHands():{result:IResult} {
+    if (threeOfKindAce) {
+        handType = 'three_of_kind_ace';
+        winningCards = sortedHand; 
+    }
+    else if (threeOfKind) {
+        handType = 'three_of_a_kind';
+        winningCards = sortedHand; 
+    }
+    else if (straightFlush) {
+        handType = 'straight_flush';
+        winningCards = sortedHand;
+    }
+    else if (straight) {
+        handType = 'straight';
+        winningCards = sortedHand;
+    }
+    else if (flush) {
+        handType = 'flush';
+        winningCards = sortedHand;
+    }
+    else if (pair) {
+        handType = 'pair';
+        const pairValue = card1.num === card2.num ? card1.num :
+            (card2.num === card3.num ? card2.num : card1.num);
+        winningCards = sortedHand.filter(card => card.num === pairValue);
+    }
+    else {
+        winningCards = [sortedHand[sortedHand.length - 1]];
+    }
+
+    return { 
+        handType, 
+        winningCards: winningCards.map(toCardString) 
+    };
+}
+
+export function evaluateHands(): { result: IResult } {
     const deck = shuffleDeck(createDeck());
     let hand: TCard[] = [];
     const randomCards: string[] = [];
@@ -59,18 +90,17 @@ export function evaluateHands():{result:IResult} {
 
     const [playerAHand, playerBHand] = [hand.slice(0, 3), hand.slice(3, 6)]
 
-    const playerAHandType: THandType = getHandTypes(playerAHand);
-    const playerBHandType: THandType = getHandTypes(playerBHand);
-    const bonusHand: THandType = SixCardHandType(hand);
-
-     let result:IResult = {
+    const playerAHandType: THandTypeResult = getHandTypes(playerAHand);
+    const playerBHandType: THandTypeResult = getHandTypes(playerBHand);
+    const bonusHand:THandTypeResult = SixCardHandType(hand); 
+    
+    let result: IResult = {
         playerAHand,
         playerBHand,
         playerAHandType,
         playerBHandType,
         bonusHand,
-        winner: 0,   // 1 => Player A or 2 => Player B , 0 => No winner(default)
-        bonusWinner: 0
+        winner:'no_winner',   
     }
 
     const handRanks = {
@@ -91,21 +121,19 @@ export function evaluateHands():{result:IResult} {
     result.playerBHandType = playerBHandType;
     result.bonusHand = bonusHand;
 
-    const rankA = handRanks[playerAHandType];
-    const rankB = handRanks[playerBHandType];
-    const bonusRank = handRanks[bonusHand];
+    const rankA = handRanks[playerAHandType.handType];
+    const rankB = handRanks[playerBHandType.handType];
 
-    if (bonusRank) result.bonusWinner = bonusRank
-    if (rankA > rankB) result.winner = 1
-    else if (rankA < rankB) result.winner = 2
+    if (rankA > rankB) result.winner = 'player_A'
+    else if (rankA < rankB) result.winner = 'player_B'
     else if (rankA == rankB) {
         const playerASuits = playerAHand.map(player => player.suit);
         const playerBSuits = playerBHand.map(player => player.suit);
         const sortedplayerANums = playerAHand.map(card => card.num).sort((a, b) => b - a);
         const sortedplayerBNums = playerBHand.map(card => card.num).sort((a, b) => b - a);
         for (let i = 0; i < 3; i++) {
-            if (sortedplayerANums[i] > sortedplayerBNums[i]) result.winner = 1;
-            else if (sortedplayerBNums[i] > sortedplayerANums[i]) result.winner = 2;
+            if (sortedplayerANums[i] > sortedplayerBNums[i]) result.winner = 'player_A';
+            else if (sortedplayerBNums[i] > sortedplayerANums[i]) result.winner = 'player_B';
             else if (sortedplayerANums[i] == sortedplayerBNums[i]) {
                 const suitPreference: Record<string, number> = {
                     'S': 4,
@@ -113,8 +141,8 @@ export function evaluateHands():{result:IResult} {
                     'D': 2,
                     'C': 1
                 }
-                if (suitPreference[playerASuits[i]] > suitPreference[playerBSuits[i]]) result.winner = 1
-                else if (suitPreference[playerASuits[i]] < suitPreference[playerBSuits[i]]) result.winner = 2
+                if (suitPreference[playerASuits[i]] > suitPreference[playerBSuits[i]]) result.winner = 'player_A'
+                else if (suitPreference[playerASuits[i]] < suitPreference[playerBSuits[i]]) result.winner = 'player_B'
             }
         }
     }
@@ -124,31 +152,63 @@ export function evaluateHands():{result:IResult} {
 };
 
 // 6 HAND BONUS
-function SixCardHandType(hand: TCard[]) {
-    const nums = hand.map(card => card.num).sort((a, b) => a - b);
+function SixCardHandType(hand: TCard[]): { handType: THandType; winningCards: string[] } {
     const suits = ['H', 'S', 'C', 'D'];
+    const cardValue = (num: number) => num === 1 ? 14 : num;
 
-    const royalFlush = suits.some(suit =>
+    const sortedHand = [...hand].sort((a, b) => cardValue(a.num) - cardValue(b.num));
+
+    const royalFlushSuit = suits.find(suit =>
         [10, 11, 12, 13, 14].every(num =>
-            hand.some(card => card.suit === suit && card.num === num)
+            hand.some(card => card.suit === suit && cardValue(card.num) === num)
         )
     );
+    if (royalFlushSuit) {
+        return {
+            handType: 'royal_flush',
+            winningCards: sortedHand
+                .filter(c => c.suit === royalFlushSuit && cardValue(c.num) >= 10)
+                .map(toCardString)
+        };
+    }
 
-    const flush = suits.some(suit =>
+    const flushSuit = suits.find(suit =>
         hand.filter(card => card.suit === suit).length >= 5
     );
 
-    const uniqueNums = [...new Set(nums)];
+    const uniqueSorted = [...new Map(sortedHand.map(c => [cardValue(c.num), c]))]
+        .map(([_, card]) => card);
+    let straightCards: TCard[] = [];
     let straightCount = 1;
-    let straight = false;
-
-    for (let i = 0; i < uniqueNums.length - 1; i++) {
-        if (uniqueNums[i + 1] === uniqueNums[i] + 1) {
+    for (let i = 0; i < uniqueSorted.length - 1; i++) {
+        if (cardValue(uniqueSorted[i + 1].num) === cardValue(uniqueSorted[i].num) + 1) {
             straightCount++;
+            straightCards.push(uniqueSorted[i]);
             if (straightCount >= 5) {
-                straight = true;
+                straightCards.push(uniqueSorted[i + 1]);
                 break;
             }
+        } else {
+            straightCount = 1;
+            straightCards = [];
+        }
+    }
+
+    if (!straightCards.length && uniqueSorted.some(c => c.num === 1)) {
+        const lowStraightNums = [1, 2, 3, 4, 5];
+        if (lowStraightNums.every(n => uniqueSorted.some(c => c.num === n))) {
+            straightCards = lowStraightNums.map(n => uniqueSorted.find(c => c.num === n)!);
+        }
+    }
+    const straight = straightCards.length >= 5;
+
+    if (straight && flushSuit) {
+        const sfCards = straightCards.filter(c => c.suit === flushSuit);
+        if (sfCards.length >= 5) {
+            return {
+                handType: 'straight_flush',
+                winningCards: sfCards.slice(0, 5).map(toCardString)
+            };
         }
     }
 
@@ -157,20 +217,51 @@ function SixCardHandType(hand: TCard[]) {
         cardNumberFrequency[card.num] = (cardNumberFrequency[card.num] || 0) + 1;
     });
 
-    const counts = Object.values(cardNumberFrequency);
-    const fourOfKind = counts.includes(4);
-    const threeOfKind = counts.includes(3);
-    const pair = counts.includes(2);
-    const fullHouse = threeOfKind && pair;
+    const counts = Object.entries(cardNumberFrequency);
+    const fourKindNum = Number(counts.find(([_, c]) => c === 4)?.[0]);
+    const threeKindNum = Number(counts.find(([_, c]) => c === 3)?.[0]);
+    const pairNums = counts.filter(([_, c]) => c === 2).map(([n]) => Number(n));
+    const fullHouse = threeKindNum && pairNums.length > 0;
 
-    let handType: THandType = 'no_hand_match';
-    if (royalFlush) handType = 'royal_flush';
-    else if (straight && flush) handType = 'straight_flush';
-    else if (fourOfKind) handType = 'four_of_a_kind';
-    else if (fullHouse) handType = 'full_house';
-    else if (flush) handType = 'flush';
-    else if (straight) handType = 'straight';
-    else if (threeOfKind) handType = 'three_of_a_kind';
-    return handType;
+    if (fourKindNum) {
+        return {
+            handType: 'four_of_a_kind',
+            winningCards: hand.filter(c => c.num === fourKindNum).map(toCardString)
+        };
+    }
+    if (fullHouse) {
+        return {
+            handType: 'full_house',
+            winningCards: [
+                ...hand.filter(c => c.num === threeKindNum),
+                ...hand.filter(c => c.num === pairNums[0])
+            ].map(toCardString)
+        };
+    }
+    if (flushSuit) {
+        return {
+            handType: 'flush',
+            winningCards: sortedHand
+                .filter(c => c.suit === flushSuit)
+                .slice(-5)
+                .map(toCardString)
+        };
+    }
+    if (straight) {
+        return {
+            handType: 'straight',
+            winningCards: straightCards.slice(0, 5).map(toCardString)
+        };
+    }
+    if (threeKindNum) {
+        return {
+            handType: 'three_of_a_kind',
+            winningCards: hand.filter(c => c.num === threeKindNum).map(toCardString)
+        };
+    }
 
-};
+    return {
+        handType: 'no_hand_match',
+        winningCards: []
+    };
+}

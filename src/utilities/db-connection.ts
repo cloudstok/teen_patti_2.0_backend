@@ -1,4 +1,4 @@
-import { settlement } from "../db/tables";
+import { settlement,lobbies,bets  } from "../db/tables";
 import { appConfig } from "./app-config";
 import { createPool, Pool, PoolConnection, RowDataPacket, ResultSetHeader, format } from "mysql2/promise";
 import { createLogger } from "./logger";
@@ -94,6 +94,8 @@ export const createTable = async () => {
     try {
         if (!pool) throw new Error('Databasepool is not initialized');
         const connection: PoolConnection = await pool.getConnection();
+        await connection.execute(lobbies);
+        await connection.execute(bets);
         await connection.execute(settlement);
         logger.info('Tables creation query executed');
     } catch (err: any) {

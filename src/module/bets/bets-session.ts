@@ -53,7 +53,7 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
     });
 
     if (isBetInvalid) {
-        return logEventAndEmitResponse(socket, betObj, 'Invalid Bet', 'bet');
+        return logEventAndEmitResponse(socket, betObj, 'Invalid Bet Amount', 'bet');
     }
 
     if (totalBetAmount > Number(balance)) {
@@ -187,8 +187,6 @@ export const settleBet = async (io: Server, result: IResult, lobbyId: number): P
 export const getMatchHistory = async (socket: Socket, userId: string, operator_id: string) => {
     try {
         const historyData = await read(`SELECT lobby_id, result, created_at FROM lobbies ORDER BY created_at DESC LIMIT 3`);
-        const getLastWin = await read(`SELECT win_amount FROM settlement WHERE user_id = ? and operator_id = ? ORDER BY created_at DESC LIMIT 1`, [userId, operator_id]);
-        if(getLastWin && getLastWin.length > 0) socket.emit('lastWin', { myWinningAmount: getLastWin[0].win_amount});
         return socket.emit('historyData', historyData);
     } catch (err) {
         console.error(`Err while getting user history data is:::`, err);
