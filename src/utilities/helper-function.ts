@@ -37,10 +37,10 @@ export const getBetResult = (betAmount: number, chip: number, result: IResult): 
         status: 'loss'
     };
 
-    const bonusWinner = result.bonusWinner;
+    const bonusHand = result.bonusHand.handType
     const playerWinner = result.winner;
-    const playerAHandType = result.playerAHandType;
-    const playerBHandType = result.playerBHandType;
+    const playerAHandType = result.playerAHandType.handType;
+    const playerBHandType = result.playerBHandType.handType;
 
     const playerPayouts: Record<number, number> = {
         1: 1.92,
@@ -56,23 +56,27 @@ export const getBetResult = (betAmount: number, chip: number, result: IResult): 
         'three_of_kind_ace': 51,
     }
 
-    const bonusPayouts: Record<number,number> = {
-        10: 1001,
-        5: 201,
-        8: 101,
-        9: 21,
-        3: 16,
-        4: 11,
-        6: 8
+    const bonusPayouts: Record<string,number> = {
+        'royal_flush': 1001,
+        'straight_flush': 201,
+        'four_of_a_kind': 101,
+        'full_house': 21,
+        'flush': 16,
+        'straight': 11,
+        'three_of_a_kind': 8
     }
 
-    if(playerWinner == chip){
+    if((playerWinner == 'player_A') && (chip == 1)){
         resultData.status = 'win';
         resultData.mult = playerPayouts[chip];
         resultData.winAmount = betAmount*resultData.mult;
-    }else if(bonusWinner && chip == 5) {
+    }else if((playerWinner == 'player_B') && (chip == 2)){
         resultData.status = 'win';
-        resultData.mult = bonusPayouts[bonusWinner];
+        resultData.mult = playerPayouts[chip];
+        resultData.winAmount = betAmount*resultData.mult;
+    }else if(bonusHand && chip == 5) {
+        resultData.status = 'win';
+        resultData.mult = bonusPayouts[bonusHand];
         resultData.winAmount = Math.min(betAmount*resultData.mult, appConfig.maxCashoutAmount);
     }else if((playerAHandType != 'high_card') && chip == 3 ){
         resultData.status = 'win';
@@ -84,4 +88,5 @@ export const getBetResult = (betAmount: number, chip: number, result: IResult): 
         resultData.winAmount = Math.min(betAmount*resultData.mult, appConfig.maxCashoutAmount);
     }
     return resultData;
+   
 };

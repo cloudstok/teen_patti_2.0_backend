@@ -54,14 +54,15 @@ const initLobby = async (io: Server): Promise<void> => {
   let pB = [];
   for (let i = 0; i < 3; i++) {
     pA.push(Object.values(playerAHand[i]).join(""))
-    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:Player Cards:RESULT`);
+    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:RESULT`);
     await sleep(1000);
     pB.push(Object.values(playerBHand[i]).join(""))
-    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:Player Cards:RESULT`);
+    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:RESULT`);
     await sleep(1000);
   };
+
   // result emit
-  io.emit('result', `${lobbyId}:${JSON.stringify({ playerAHandType, playerBHandType, bonusHandType, winner })}:Card Result: RESULT`)
+  io.emit('result', { playerAHandType, playerBHandType, bonusHandType, winner })
   await sleep(1000);
   io.emit('cards', `${lobbyId}:${1}:ENDED`);
   await settleBet(io, result, lobbyId);
