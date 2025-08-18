@@ -8,7 +8,7 @@ export type THandType = 'high_card' | 'three_of_kind_ace' | 'three_of_a_kind' | 
 export type THandTypeResult = {
     handType: THandType;
     winningCards: string[];
-    remainingCards: string[];
+    remainingCards?: string[];
 }
 
 export interface IResult {

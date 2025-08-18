@@ -168,8 +168,7 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
             .filter(c => c.suit === royalFlushSuit && cardValue(c.num) >= 10);
         return {
             handType: 'royal_flush',
-            winningCards: winning.map(toCardString),
-            remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+            winningCards: winning.map(toCardString)
         };
     }
 
@@ -209,8 +208,7 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
             const winning = sfCards.slice(0, 5);
             return {
                 handType: 'straight_flush',
-                winningCards: winning.map(toCardString),
-                remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+                winningCards: winning.map(toCardString)
             };
         }
     }
@@ -230,8 +228,7 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
         const winning = hand.filter(c => c.num === fourKindNum);
         return {
             handType: 'four_of_a_kind',
-            winningCards: winning.map(toCardString),
-            remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+            winningCards: winning.map(toCardString)
         };
     }
     if (fullHouse) {
@@ -241,38 +238,33 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
         ];
         return {
             handType: 'full_house',
-            winningCards: winning.map(toCardString),
-            remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+            winningCards: winning.map(toCardString)
         };
     }
     if (flushSuit) {
         const winning = sortedHand.filter(c => c.suit === flushSuit).slice(-5);
         return {
             handType: 'flush',
-            winningCards: winning.map(toCardString),
-            remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+            winningCards: winning.map(toCardString)
         };
     }
     if (straight) {
         const winning = straightCards.slice(0, 5);
         return {
             handType: 'straight',
-            winningCards: winning.map(toCardString),
-            remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+            winningCards: winning.map(toCardString)
         };
     }
     if (threeKindNum) {
         const winning = hand.filter(c => c.num === threeKindNum);
         return {
             handType: 'three_of_a_kind',
-            winningCards: winning.map(toCardString),
-            remainingCards: hand.filter(c => !winning.includes(c)).map(toCardString)
+            winningCards: winning.map(toCardString)
         };
     }
 
     return {
         handType: 'no_hand_match',
-        winningCards: [],
-        remainingCards: hand.map(toCardString)
+        winningCards: []
     };
 }
