@@ -47,17 +47,16 @@ const initLobby = async (io: Server): Promise<void> => {
   const bonusHandType = result.bonusHand
   const winner = result.winner
 
-
   recurLobbyData.status = 2;
   setCurrentLobby(recurLobbyData);
   let pA = [];
   let pB = [];
   for (let i = 0; i < 3; i++) {
     pA.push(Object.values(playerAHand[i]).join(""))
-    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:RESULT`);
+    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA })}:RESULT`);
     await sleep(1000);
     pB.push(Object.values(playerBHand[i]).join(""))
-    io.emit('cards', `${lobbyId}:${JSON.stringify({ pA, pB })}:RESULT`);
+    io.emit('cards', `${lobbyId}:${JSON.stringify({ pB })}:RESULT`);
     await sleep(1000);
   };
 
