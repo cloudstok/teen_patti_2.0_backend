@@ -132,19 +132,36 @@ export function evaluateHands(): { result: IResult } {
         const sortedplayerANums = playerAHand.map(card => card.num).sort((a, b) => b - a);
         const sortedplayerBNums = playerBHand.map(card => card.num).sort((a, b) => b - a);
         for (let i = 0; i < 3; i++) {
-            if (sortedplayerANums[i] > sortedplayerBNums[i]) result.winner = 'player_A';
-            else if (sortedplayerBNums[i] > sortedplayerANums[i]) result.winner = 'player_B';
-            else if (sortedplayerANums[i] == sortedplayerBNums[i]) {
-                const suitPreference: Record<string, number> = {
-                    'S': 4,
-                    'H': 3,
-                    'D': 2,
-                    'C': 1
-                }
-                if (suitPreference[playerASuits[i]] > suitPreference[playerBSuits[i]]) result.winner = 'player_A'
-                else if (suitPreference[playerASuits[i]] < suitPreference[playerBSuits[i]]) result.winner = 'player_B'
+            if (sortedplayerANums[i] > sortedplayerBNums[i]) {
+                result.winner = 'player_A';
+                break;
+            }
+            else if (sortedplayerBNums[i] > sortedplayerANums[i]) {
+                result.winner = 'player_B';
+                break;
             }
         }
+
+        if (result.winner == 'no_winner') {
+            const suitPreference: Record<string, number> = {
+                'S': 4,
+                'H': 3,
+                'D': 2,
+                'C': 1
+            };
+
+            for (let i = 0; i < 3; i++) {
+                if (suitPreference[playerASuits[i]] > suitPreference[playerBSuits[i]]) {
+                    result.winner = 'player_A';
+                    break;
+                }
+                else if (suitPreference[playerASuits[i]] < suitPreference[playerBSuits[i]]) {
+                    result.winner = 'player_B';
+                    break;
+                }
+            }
+        }
+
     }
     return {
         result
