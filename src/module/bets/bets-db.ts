@@ -41,7 +41,7 @@ export const addSettleBet = async (settlements: Settlement[]): Promise<void> => 
 export const insertBets = async (data: BetData): Promise<void> => {
   try {
     const { bet_id, totalBetAmount, userBets } = data;
-    const [initial, lobby_id, user_id, operator_id] = bet_id.split(':');
+    const [lobby_id, user_id, operator_id] = bet_id.split(':');
     await write(SQL_INSERT_BETS, [
       bet_id,
       lobby_id,

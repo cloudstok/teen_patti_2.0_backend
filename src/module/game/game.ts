@@ -28,7 +28,7 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
 
     const [card1, card2, card3] = sortedHand;
     const flush = card1.suit === card2.suit && card2.suit === card3.suit;
-    const straight = card2.num === card1.num + 1 && card3.num === card2.num + 1;
+    const straight = (card2.num === card1.num + 1 && card3.num === card2.num + 1) || (card1.num === 2 && card2.num === 3 && card3.num === 14);
     const threeOfKindAce = card1.num === 1 && card2.num === 1 && card3.num === 1;
     const threeOfKind = card1.num === card2.num && card2.num === card3.num;
     const pair = card1.num === card2.num || card2.num === card3.num || card1.num === card3.num;
@@ -171,18 +171,17 @@ export function evaluateHands(): { result: IResult } {
 // 6 HAND BONUS
 function SixCardHandType(hand: TCard[]): THandTypeResult {
     const suits = ['H', 'S', 'C', 'D'];
-    const cardValue = (num: number) => num === 1 ? 14 : num;
 
-    const sortedHand = [...hand].sort((a, b) => cardValue(a.num) - cardValue(b.num));
+    const sortedHand = [...hand].sort((a, b) => (a.num) - (b.num));
     const royalFlushSuit = suits.find(suit =>
         [10, 11, 12, 13, 14].every(num =>
-            hand.some(card => card.suit === suit && cardValue(card.num) === num)
+            hand.some(card => card.suit === suit && (card.num) === num)
         )
     );
 
     if (royalFlushSuit) {
         const winning = sortedHand
-            .filter(c => c.suit === royalFlushSuit && cardValue(c.num) >= 10);
+            .filter(c => c.suit === royalFlushSuit && (c.num) >= 10);
         return {
             handType: 'royal_flush',
             winningCards: winning.map(toCardString)
@@ -193,12 +192,12 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
         hand.filter(card => card.suit === suit).length >= 5
     );
 
-    const uniqueSorted = [...new Map(sortedHand.map(c => [cardValue(c.num), c]))]
+    const uniqueSorted = [...new Map(sortedHand.map(c => [(c.num), c]))]
         .map(([_, card]) => card);
     let straightCards: TCard[] = [];
     let straightCount = 1;
     for (let i = 0; i < uniqueSorted.length - 1; i++) {
-        if (cardValue(uniqueSorted[i + 1].num) === cardValue(uniqueSorted[i].num) + 1) {
+        if ((uniqueSorted[i + 1].num) === (uniqueSorted[i].num) + 1) {
             straightCount++;
             straightCards.push(uniqueSorted[i]);
             if (straightCount >= 5) {
@@ -211,8 +210,8 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
         }
     }
 
-    if (!straightCards.length && uniqueSorted.some(c => c.num === 1)) {
-        const lowStraightNums = [1, 2, 3, 4, 5];
+    if (!straightCards.length && uniqueSorted.some(c => c.num === 14)) {
+        const lowStraightNums = [14, 2, 3, 4, 5];
         if (lowStraightNums.every(n => uniqueSorted.some(c => c.num === n))) {
             straightCards = lowStraightNums.map(n => uniqueSorted.find(c => c.num === n)!);
         }

@@ -1,5 +1,6 @@
 import { LobbyData } from '../../interfaces';
 import { write } from '../../utilities/db-connection';
+import { createLogger } from '../../utilities/logger';
 
 const SQL_INSERT_LOBBIES = 'INSERT INTO lobbies (lobby_id, start_delay, end_delay, result) values(?,?,?,?)';
 
@@ -12,7 +13,8 @@ export const insertLobbies = async (data: LobbyData): Promise<void> => {
       end_delay,
       JSON.stringify(result) 
     ]);
-  } catch (err) {
+  } catch (err:any) {
     console.error(err);
+    createLogger("lobbies","jsonl").info(err.message)
   }
 };
