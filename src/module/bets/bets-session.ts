@@ -128,10 +128,14 @@ export const settleBet = async (io: Server, result: IResult, lobbyId: number): P
                 let totalMultiplier = 0;
                 let totalBetAmount = 0;
                 const betResults: BetResult[] = [];
+
                 userBets?.forEach(({ betAmount, chip }) => {
                     totalBetAmount += betAmount;
                     const roundResult = getBetResult(betAmount, chip, result);
-                    betResults.push(roundResult);
+                    const winAmount = roundResult.winAmount
+                    const profit = winAmount - betAmount
+                    betResults.push({ profit, ...roundResult });
+
                     if (roundResult.mult > 0) {
                         totalMultiplier += roundResult.status == 'win' ? roundResult.mult : 0;
                         finalAmount += roundResult.winAmount;
@@ -184,12 +188,3 @@ export const settleBet = async (io: Server, result: IResult, lobbyId: number): P
     }
 };
 
-export const getMatchHistory = async (socket: Socket, userId: string, operator_id: string) => {
-    try {
-        const historyData = await read(`SELECT lobby_id, result, created_at FROM lobbies ORDER BY created_at DESC LIMIT 3`);
-        return socket.emit('historyData', historyData);
-    } catch (err) {
-        console.error(`Err while getting user history data is:::`, err);
-        return;
-    }
-}

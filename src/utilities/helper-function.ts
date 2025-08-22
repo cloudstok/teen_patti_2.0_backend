@@ -63,7 +63,8 @@ export const getBetResult = (betAmount: number, chip: number, result: IResult): 
         'full_house': 21,
         'flush': 16,
         'straight': 11,
-        'three_of_a_kind': 8
+        'three_of_a_kind': 8,
+        'no_hand_match':0
     }
 
     if((playerWinner == 'player_A') && (chip == 1)){

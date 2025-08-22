@@ -1,13 +1,7 @@
 import axios from 'axios';
 import { FinalUserData, RawUserData } from '../../interfaces';
 
-function getImageValue(id: string): number {
-  let sum = 0;
-  for (const char of id) {
-    sum += char.charCodeAt(0);
-  }
-  return sum % 10;
-}
+
 
 export const getUserDataFromSource = async (
   token: string,
@@ -26,7 +20,7 @@ export const getUserDataFromSource = async (
       const userId = userData.user_id;
       const { operatorId } = userData;
       const id = `${operatorId}:${userId}`;
-      const image = getImageValue(id);
+
 
       const finalData: FinalUserData = {
         ...userData,
@@ -34,7 +28,7 @@ export const getUserDataFromSource = async (
         id,
         game_id,
         token,
-        image,
+  
       };
 
       return finalData;
@@ -43,7 +37,6 @@ export const getUserDataFromSource = async (
     return;
   } catch (err: any) {
     console.error(err);
-    //logger.error(JSON.stringify({ data: token, err }));
     return false;
   }
 };

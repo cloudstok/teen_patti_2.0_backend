@@ -79,15 +79,8 @@ const initLobby = async (io: Server): Promise<void> => {
     start_delay,
     end_delay,
     result,
-  };
-
-  io.emit('history', {
-    time: history.time,
-    lobbyId: history.lobbyId,
-    result: history.result
-  });
-
-  logger.info(JSON.stringify(history));
+  }
+  
   await insertLobbies(history);
 
   return initLobby(io);

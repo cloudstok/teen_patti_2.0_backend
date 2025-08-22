@@ -26,6 +26,7 @@ export type BetResult = {
     winAmount: number;
     mult: number;
     status: 'win' | 'loss';
+    profit?: number;
 };
 
 export interface LobbyData {
@@ -48,7 +49,6 @@ export interface FinalUserData extends RawUserData {
     id: string;
     game_id: string;
     token: string;
-    image: number;
 };
 
 export interface UserBet {

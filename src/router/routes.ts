@@ -10,29 +10,32 @@ routes.get('/', async (req: Request, res: Response) => {
 
 routes.get('/bet-history', async (req, res) => {
   try {
-    const { user_id, operator_id } = req.query as {
+    const { user_id, operator_id, limit } = req.query as {
       user_id: string;
       operator_id: string;
+      limit: string
     };
     if (!user_id || !operator_id) {
-      res.status(400).json({ status: false, message: 'Required params : user_id and operator_id' });
+      return res.status(400).json({ status: false, message: 'Required params : user_id and operator_id' });
     };
 
+    const limitNum = parseInt(limit, 10)
     const result = await read(
-     `SELECT * 
-     FROM settlement 
+      `SELECT * 
+     FROM settlement
      WHERE user_id = ? AND operator_id = ? 
      ORDER BY created_at DESC 
-     LIMIT 10 OFFSET 10`,
-      [user_id, operator_id]
+     LIMIT ?`,
+      [user_id, operator_id, limitNum]
     );
 
+
     if (!result || result.length === 0) {
-      res.status(404).json({ status: false, data: result })
+     return res.status(404).json({ status: false, data: result })
     }
-    res.status(200).json({ status: true, data: result });
+    return res.status(200).json({ status: true, data: result });
   } catch (err: any) {
-    res.status(500).json({ status: false, message: 'Error fetching game history', error: err.message });
+    return res.status(500).json({ status: false, message: 'Error fetching game history', error: err.message });
   };
 });
 
