@@ -29,7 +29,7 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
     const [card1, card2, card3] = sortedHand;
     const flush = card1.suit === card2.suit && card2.suit === card3.suit;
     const straight = (card2.num === card1.num + 1 && card3.num === card2.num + 1) || (card1.num === 2 && card2.num === 3 && card3.num === 14);
-    const threeOfKindAce = card1.num === 1 && card2.num === 1 && card3.num === 1;
+    const threeOfKindAce = card1.num === 14 && card2.num === 14 && card3.num === 14;
     const threeOfKind = card1.num === card2.num && card2.num === card3.num;
     const pair = card1.num === card2.num || card2.num === card3.num || card1.num === card3.num;
     const straightFlush = flush && straight;
@@ -78,6 +78,7 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
 export function evaluateHands(): { result: IResult } {
     const deck = shuffleDeck(createDeck());
     let hand: TCard[] = [];
+
     const randomCards: string[] = [];
 
     while (hand.length < 6) {

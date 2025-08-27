@@ -25,7 +25,7 @@ export type BetResult = {
     betAmount: number;
     winAmount: number;
     mult: number;
-    status: 'win' | 'loss';
+    status: 'Win' | 'Loss';
     profit?: number;
 };
 
