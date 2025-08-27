@@ -146,6 +146,7 @@ routes.get('/bet-history-updated', async (req, res) => {
           status:bet.status
         },
         user_id: row.user_id,
+        lobby_id:row.lobby_id,
         result: row.result,
         created_at: row.created_at,
       })
