@@ -77,17 +77,24 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
 
 export function evaluateHands(): { result: IResult } {
     const deck = shuffleDeck(createDeck());
-    let hand: TCard[] = [];
-    const randomCards: string[] = [];
+    let hand: TCard[] = [
+        { suit: 'D', num: 11 },
+        { suit: 'H', num: 8 },
+        { suit: 'C', num: 14 },
+        { suit: 'S', num: 6 },
+        { suit: 'D', num: 10 },
+        { suit: 'D', num: 9 }
+    ];
+    // const randomCards: string[] = [];
 
-    while (hand.length < 6) {
-        const card = deck[Math.floor(Math.random() * 52)]
-        const concat = `${card.num}+${card.suit}`;
-        if (!randomCards.includes(concat)) {
-            randomCards.push(concat);
-            hand.push(card);
-        }
-    }
+    // while (hand.length < 6) {
+    //     const card = deck[Math.floor(Math.random() * 52)]
+    //     const concat = `${card.num}+${card.suit}`;
+    //     if (!randomCards.includes(concat)) {
+    //         randomCards.push(concat);
+    //         hand.push(card);
+    //     }
+    // }
 
     const [playerAHand, playerBHand] = [hand.slice(0, 3), hand.slice(3, 6)]
 
@@ -173,49 +180,54 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
     const suits = ['H', 'S', 'C', 'D'];
 
     const sortedHand = [...hand].sort((a, b) => (a.num) - (b.num));
-    const royalFlushSuit = suits.find(suit =>
-        [10, 11, 12, 13, 14].every(num =>
-            hand.some(card => card.suit === suit && (card.num) === num)
-        )
-    );
-
-    if (royalFlushSuit) {
-        const winning = sortedHand
-            .filter(c => c.suit === royalFlushSuit && (c.num) >= 10);
-        return {
-            handType: 'royal_flush',
-            winningCards: winning.map(toCardString)
-        };
+    for (const suit of suits) {
+        const royalCards = sortedHand.filter(c => c.suit === suit && c.num >= 10);
+        if (royalCards.length === 5) {
+            return {
+                handType: 'royal_flush',
+                winningCards: royalCards.map(toCardString)
+            };
+        }
     }
 
     const flushSuit = suits.find(suit =>
         hand.filter(card => card.suit === suit).length >= 5
     );
 
-    const uniqueSorted = [...new Map(sortedHand.map(c => [(c.num), c]))]
-        .map(([_, card]) => card);
     let straightCards: TCard[] = [];
     let straightCount = 1;
-    for (let i = 0; i < uniqueSorted.length - 1; i++) {
-        if ((uniqueSorted[i + 1].num) === (uniqueSorted[i].num) + 1) {
+    for (let i = 0; i < sortedHand.length - 1; i++) {
+        if ((sortedHand[i + 1].num) === (sortedHand[i].num) + 1) {
             straightCount++;
-            straightCards.push(uniqueSorted[i]);
+            straightCards.push(sortedHand[i]);
             if (straightCount >= 5) {
-                straightCards.push(uniqueSorted[i + 1]);
+                straightCards.push(sortedHand[i + 1]);
                 break;
             }
-        } else {
-            straightCount = 1;
-            straightCards = [];
         }
     }
 
-    if (!straightCards.length && uniqueSorted.some(c => c.num === 14)) {
-        const lowStraightNums = [14, 2, 3, 4, 5];
-        if (lowStraightNums.every(n => uniqueSorted.some(c => c.num === n))) {
-            straightCards = lowStraightNums.map(n => uniqueSorted.find(c => c.num === n)!);
+    if (!straightCards.length && straightCards.some(c => c.num === 14)) {
+        const lowStraightNums = [2, 3, 4, 5, 14]
+        for (let nums of lowStraightNums) {
+            for (let card of sortedHand) {
+                if (card.num === nums) {
+                    straightCards.push(card)
+                    break
+                } else {
+                    continue
+                }
+            }
         }
     }
+
+    // if (!straightCards.length && straightCards.some(c => c.num === 14)) {
+    //     const lowStraightNums = [14, 2, 3, 4, 5];
+    //     if (lowStraightNums.every(n => straightCards.some(c => c.num === n))) {
+    //         straightCards = lowStraightNums.map(n => straightCards.find(c => c.num === n)!);
+    //     }
+    // }
+
     const straight = straightCards.length >= 5;
 
     if (straight && flushSuit) {

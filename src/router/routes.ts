@@ -29,11 +29,13 @@ routes.get('/bet-history', async (req, res) => {
       [user_id, operator_id, limitNum]
     );
 
+    const finalResult = []
 
     if (!result || result.length === 0) {
-     return res.status(404).json({ status: false, data: result })
+      return res.status(404).json({ status: false, data: result })
     }
-    return res.status(200).json({ status: true, data: result });
+    // @ts-ignore
+    return res.status(200).json({ status: true, data: JSON.parse(result.userBets) });
   } catch (err: any) {
     return res.status(500).json({ status: false, message: 'Error fetching game history', error: err.message });
   };
