@@ -25,10 +25,10 @@ export const generateUUIDv7 = (): string => {
 
 export const updateBalanceFromAccount = async (data: BetsData, key: WebhookKey, playerDetails: PlayerDetails): Promise<AccountsResult> => {
     try {
-    
+
         const webhookData = await prepareDataForWebhook({ ...data, game_id: playerDetails.game_id }, key);
         if (!webhookData) return { status: false, type: key };
-   
+
         if (key === 'CREDIT') {
             await sendToQueue('', 'games_cashout', JSON.stringify({ ...webhookData, operatorId: playerDetails.operatorId, token: playerDetails.token }));
             return { status: true, type: key };
@@ -78,13 +78,14 @@ export const sendRequestToAccounts = async (webhookData: WebhookData, token: str
 export const prepareDataForWebhook = async (betObj: BetsData, key: WebhookKey): Promise<WebhookData | false> => {
     try {
         let { id, bet_amount, winning_amount, game_id, user_id, txn_id, ip, bet_id } = betObj;
-
         const amountFormatted = Number(bet_amount).toFixed(2);
+        const winAmountFormatted = winning_amount ? Number(winning_amount).toFixed(2) : "0.00";
+
         let baseData: WebhookData = {
             txn_id: generateUUIDv7(),
             ip,
             game_id,
-            user_id
+            user_id: decodeURIComponent(user_id)
         };
 
         if (key == 'DEBIT') return {
@@ -96,9 +97,9 @@ export const prepareDataForWebhook = async (betObj: BetsData, key: WebhookKey): 
         }
         else if (key == 'CREDIT') return {
             ...baseData,
-            amount: winning_amount,
+            amount: winAmountFormatted,
             txn_ref_id: txn_id,
-            description: `${Number(winning_amount).toFixed(2)} credited for Teen Patti 2.0 game for Round ${id}`,
+            description: `${winAmountFormatted} credited for Teen Patti 2.0 game for Round ${id}`,
             txn_type: 1
         }
         else return baseData;

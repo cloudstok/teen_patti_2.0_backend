@@ -17,7 +17,7 @@ export const getUserDataFromSource = async (
     const userData: RawUserData | undefined = response?.data?.user;
 
     if (userData) {
-      const userId = userData.user_id;
+      const userId = encodeURIComponent(userData.user_id);
       const { operatorId } = userData;
       const id = `${operatorId}:${userId}`;
 
@@ -28,7 +28,7 @@ export const getUserDataFromSource = async (
         id,
         game_id,
         token,
-  
+
       };
 
       return finalData;

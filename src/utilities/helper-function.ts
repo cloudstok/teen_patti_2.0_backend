@@ -27,14 +27,13 @@ export const getUserIP = (socket: any): string => {
     return socket.handshake.address || '';
 };
 
-
 export const getBetResult = (betAmount: number, chip: number, result: IResult): BetResult => {
     const resultData: BetResult = {
         chip,
         betAmount,
         winAmount: 0,
         mult: 0,
-        status: 'loss'
+        status: 'Loss'
     };
 
     const bonusHand = result.bonusHand.handType
@@ -68,25 +67,25 @@ export const getBetResult = (betAmount: number, chip: number, result: IResult): 
     }
 
     if((playerWinner == 'player_A') && (chip == 1)){
-        resultData.status = 'win';
+        resultData.status = 'Win';
         resultData.mult = playerPayouts[chip];
         resultData.winAmount = betAmount*resultData.mult;
     }else if((playerWinner == 'player_B') && (chip == 2)){
-        resultData.status = 'win';
+        resultData.status = 'Win';
         resultData.mult = playerPayouts[chip];
         resultData.winAmount = betAmount*resultData.mult;
-    }else if(bonusHand && chip == 5) {
-        resultData.status = 'win';
+    }else if((bonusHand !== 'no_hand_match') && chip == 5) {
+        resultData.status = 'Win';
         resultData.mult = bonusPayouts[bonusHand];
-        resultData.winAmount = Math.min(betAmount*resultData.mult, appConfig.maxCashoutAmount);
+        resultData.winAmount = betAmount*resultData.mult
     }else if((playerAHandType != 'high_card') && chip == 3 ){
-        resultData.status = 'win';
+        resultData.status = 'Win';
         resultData.mult = pairPlusPayouts[playerAHandType];
-        resultData.winAmount = Math.min(betAmount*resultData.mult, appConfig.maxCashoutAmount);
+        resultData.winAmount = betAmount*resultData.mult
     }else if((playerBHandType != 'high_card') && chip == 4 ){
-        resultData.status = 'win';
+        resultData.status = 'Win';
         resultData.mult = pairPlusPayouts[playerBHandType];
-        resultData.winAmount = Math.min(betAmount*resultData.mult, appConfig.maxCashoutAmount);
+        resultData.winAmount = betAmount*resultData.mult
     }
     return resultData;
    

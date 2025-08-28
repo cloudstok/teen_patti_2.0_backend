@@ -29,7 +29,7 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
     const [card1, card2, card3] = sortedHand;
     const flush = card1.suit === card2.suit && card2.suit === card3.suit;
     const straight = (card2.num === card1.num + 1 && card3.num === card2.num + 1) || (card1.num === 2 && card2.num === 3 && card3.num === 14);
-    const threeOfKindAce = card1.num === 1 && card2.num === 1 && card3.num === 1;
+    const threeOfKindAce = card1.num === 14 && card2.num === 14 && card3.num === 14;
     const threeOfKind = card1.num === card2.num && card2.num === card3.num;
     const pair = card1.num === card2.num || card2.num === card3.num || card1.num === card3.num;
     const straightFlush = flush && straight;
@@ -77,24 +77,17 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
 
 export function evaluateHands(): { result: IResult } {
     const deck = shuffleDeck(createDeck());
-    let hand: TCard[] = [
-        { suit: 'D', num: 11 },
-        { suit: 'H', num: 8 },
-        { suit: 'C', num: 14 },
-        { suit: 'S', num: 6 },
-        { suit: 'D', num: 10 },
-        { suit: 'D', num: 9 }
-    ];
-    // const randomCards: string[] = [];
+    let hand: TCard[] = [];
+    const randomCards: string[] = [];
 
-    // while (hand.length < 6) {
-    //     const card = deck[Math.floor(Math.random() * 52)]
-    //     const concat = `${card.num}+${card.suit}`;
-    //     if (!randomCards.includes(concat)) {
-    //         randomCards.push(concat);
-    //         hand.push(card);
-    //     }
-    // }
+    while (hand.length < 6) {
+        const card = deck[Math.floor(Math.random() * 52)]
+        const concat = `${card.num}+${card.suit}`;
+        if (!randomCards.includes(concat)) {
+            randomCards.push(concat);
+            hand.push(card);
+        }
+    }
 
     const [playerAHand, playerBHand] = [hand.slice(0, 3), hand.slice(3, 6)]
 
@@ -195,38 +188,31 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
     );
 
     let straightCards: TCard[] = [];
-    let straightCount = 1;
-    for (let i = 0; i < sortedHand.length - 1; i++) {
-        if ((sortedHand[i + 1].num) === (sortedHand[i].num) + 1) {
-            straightCount++;
+    for (let i = 0; i < sortedHand.length; i++) {
+        if (
+            straightCards.length === 0 ||
+            sortedHand[i].num === straightCards[straightCards.length - 1].num + 1
+        ) {
             straightCards.push(sortedHand[i]);
-            if (straightCount >= 5) {
-                straightCards.push(sortedHand[i + 1]);
-                break;
-            }
+        } else if (sortedHand[i].num !== straightCards[straightCards.length - 1].num) {
+            straightCards = [sortedHand[i]];
         }
     }
+      if (straightCards.length < 5) {
+            straightCards = [];
+        }
 
-    if (!straightCards.length && straightCards.some(c => c.num === 14)) {
-        const lowStraightNums = [2, 3, 4, 5, 14]
-        for (let nums of lowStraightNums) {
-            for (let card of sortedHand) {
-                if (card.num === nums) {
-                    straightCards.push(card)
-                    break
-                } else {
-                    continue
-                }
-            }
+    if (!straightCards.length && sortedHand.some(c => c.num === 14)) {
+        const lowStraightNums = [2, 3, 4, 5, 14];
+        const lowStraight = [];
+        for (let num of lowStraightNums) {
+            const card = sortedHand.find(c => c.num === num);
+            if (card) lowStraight.push(card);
+        }
+        if (lowStraight.length === 5) {
+            straightCards = lowStraight;
         }
     }
-
-    // if (!straightCards.length && straightCards.some(c => c.num === 14)) {
-    //     const lowStraightNums = [14, 2, 3, 4, 5];
-    //     if (lowStraightNums.every(n => straightCards.some(c => c.num === n))) {
-    //         straightCards = lowStraightNums.map(n => straightCards.find(c => c.num === n)!);
-    //     }
-    // }
 
     const straight = straightCards.length >= 5;
 
