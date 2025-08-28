@@ -3,8 +3,6 @@ import { getUserDataFromSource } from './module/players/player-event';
 import { eventRouter } from './router/event-router';
 import { messageRouter } from './router/message-router';
 import { setCache, deleteCache } from './utilities/redis-connection';
-export const inPlayUser: Set<string> = new Set();
-
 
 export const initSocket = (io: Server): void => {
   eventRouter(io);
@@ -27,12 +25,6 @@ export const initSocket = (io: Server): void => {
       return;
     }
 
-    const isUserConnected = inPlayUser.has(userData.id);
-    if (isUserConnected) {
-      socket.emit('betError', 'User already connected, disconnecting...');
-      socket.disconnect(true);
-      return;
-    }
     const balance = Number(userData.balance).toFixed(2)
     socket.emit('info',
       {
@@ -43,12 +35,10 @@ export const initSocket = (io: Server): void => {
     );
 
     await setCache(`PL:${socket.id}`, JSON.stringify({ ...userData, socketId: socket.id }), 3600);
-    inPlayUser.add(userData.id);
 
     messageRouter(io, socket);
 
     socket.on('disconnect', async () => {
-      inPlayUser.delete(userData.id)
       await deleteCache(`PL:${socket.id}`);
     });
 
