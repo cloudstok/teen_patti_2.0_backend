@@ -106,7 +106,7 @@ export const placeBet = async (socket: Socket, betData: [string, string]) => {
     await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
 
     socket.emit("info", {
-        userId,
+        user_id:userId,
         operator_id: operatorId,
         balance: parsedPlayerDetails.balance
     });
