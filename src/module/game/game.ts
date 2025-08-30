@@ -26,8 +26,8 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
     const [c1, c2, c3] = sortedHand;
 
     const flush = c1.suit === c2.suit && c2.suit === c3.suit;
-    const straight = (c2.num === c1.num + 1 && c3.num === c2.num + 1) || (c1.num === 2 && c2.num === 3 && c3.num === 14);
-    const threeOfKindAce = c1.num === 14 && c2.num === 14 && c3.num === 14;
+    const straight = (c2.num === c1.num + 1 && c3.num === c2.num + 1) || (c1.num === 2 && c2.num === 3 && c3.num === 14);;
+    const threeOfKindAce = sortedHand.every(e => e.num === 14);
     const threeOfKind = c1.num === c2.num && c2.num === c3.num;
     const pairValue = c1.num === c2.num ? c1.num : c2.num === c3.num ? c2.num : c1.num;
     const pair = c1.num === c2.num || c2.num === c3.num || c1.num === c3.num;
@@ -55,15 +55,12 @@ function getHandTypes(hand: TCard[]): THandTypeResult {
 export function evaluateHands(): { finalResult: IResult } {
     const deck = shuffleDeck(createDeck());
     let hand: TCard[] = [];
-    const randomCards: string[] = [];
 
     while (hand.length < 6) {
-        const card = deck[Math.floor(Math.random() * 52)]
-        const concat = `${card.num}+${card.suit}`;
-        if (!randomCards.includes(concat)) {
-            randomCards.push(concat);
-            hand.push(card);
-        }
+        const cardIndex = Math.floor(Math.random() * deck.length);
+        const card = deck[cardIndex];
+        deck.splice(cardIndex, 1);
+        hand.push(card);
     }
 
     const [playerAHand, playerBHand] = [hand.slice(0, 3), hand.slice(3, 6)]
