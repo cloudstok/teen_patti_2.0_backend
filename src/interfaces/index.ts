@@ -33,7 +33,7 @@ export interface LobbyData {
     lobbyId: number;
     start_delay: number;
     end_delay: number;
-    result: {};
+    finalResult: {};
     time?: Date;
 };
 

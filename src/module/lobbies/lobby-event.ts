@@ -17,7 +17,7 @@ export const initRounds = async (io: Server): Promise<void> => {
 
 const initLobby = async (io: Server): Promise<void> => {
 
-  const lobbyId = 1755843513509//Date.now();
+  const lobbyId = Date.now();
   const recurLobbyData: { lobbyId: number; status: number } = {
     lobbyId,
     status: 0,
@@ -39,19 +39,19 @@ const initLobby = async (io: Server): Promise<void> => {
   io.emit('cards', `${lobbyId}:0:CALCULATING`);
   await sleep(3000);
 
-  const { result } = evaluateHands()
-  const playerAHand = result.playerAHand
-  const playerBHand = result.playerBHand
-  const playerAHandType = result.playerAHandType
-  const playerBHandType = result.playerBHandType
-  const bonusHandType = result.bonusHand
-  const winner = result.winner
+  const { finalResult } = evaluateHands()
+  const playerAHand = finalResult.playerAHand
+  const playerBHand = finalResult.playerBHand
+  const playerAHandType = finalResult.playerAHandType
+  const playerBHandType = finalResult.playerBHandType
+  const bonusHandType = finalResult.bonusHand
+  const winner = finalResult.winner
 
   recurLobbyData.status = 2;
   setCurrentLobby(recurLobbyData);
   let pA = [];
   let pB = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < playerAHand.length; i++) {
     pA.push(Object.values(playerAHand[i]).join(""))
     io.emit('cards', `${lobbyId}:${JSON.stringify({ pA })}:RESULT`);
     await sleep(1000);
@@ -64,7 +64,7 @@ const initLobby = async (io: Server): Promise<void> => {
   io.emit('result', { playerAHandType, playerBHandType, bonusHandType, winner })
   await sleep(1000);
   io.emit('cards', `${lobbyId}:${1}:ENDED`);
-  await settleBet(io, result, lobbyId);
+  await settleBet(io, finalResult, lobbyId);
 
   recurLobbyData.status = 3;
   setCurrentLobby(recurLobbyData);
@@ -78,7 +78,7 @@ const initLobby = async (io: Server): Promise<void> => {
     lobbyId,
     start_delay,
     end_delay,
-    result,
+    finalResult,
   }
   
   await insertLobbies(history);
