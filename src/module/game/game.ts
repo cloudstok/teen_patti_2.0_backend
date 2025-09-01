@@ -100,19 +100,38 @@ export function evaluateHands(): { finalResult: IResult } {
     }
 };
 
+const getCardFrequency = (card: TCard[]): Record<number, number> => {
+    const cardNumberFrequency: Record<number, number> = {};
+    card.forEach(card => {
+        cardNumberFrequency[card.num] = (cardNumberFrequency[card.num] || 0) + 1;
+    });
+    return cardNumberFrequency
+}
+
 function resultCalculation(rankA: number, rankB: number, playerAHand: TCard[], playerBHand: TCard[]): string {
     let result: string = 'no_winner'
     if (rankA > rankB) result = 'player_A'
     else if (rankA < rankB) result = 'player_B'
     else if (rankA == rankB) {
-        const sortedANums = [...playerAHand].sort((a, b) => b.num - a.num);
-        const sortedBNums = [...playerBHand].sort((a, b) => b.num - a.num);
+        const sortedA = [...playerAHand].sort((a, b) => b.num - a.num);
+        const sortedB = [...playerBHand].sort((a, b) => b.num - a.num);
 
-        for (let i = 0; i < sortedANums.length; i++) {
-            if (sortedANums[i].num > sortedBNums[i].num) {
+        if ((rankA == 2)) {
+            const cardNumberFrequencyA = getCardFrequency(playerAHand);
+            const numA = +Object.keys(cardNumberFrequencyA).find(num => cardNumberFrequencyA[+num] > 1)!;
+
+            const cardNumberFrequencyB = getCardFrequency(playerBHand);
+            const numB = +Object.keys(cardNumberFrequencyB).find(num => cardNumberFrequencyB[+num] > 1)!;
+
+            if (numA > numB) return result = "player_A";
+            else if (numA < numB) return result = "player_B";
+        }
+
+        for (let i = 0; i < sortedA.length; i++) {
+            if (sortedA[i].num > sortedB[i].num) {
                 result = "player_A";
                 break;
-            } else if (sortedBNums[i].num > sortedANums[i].num) {
+            } else if (sortedB[i].num > sortedA[i].num) {
                 result = "player_B";
                 break;
             }
@@ -122,13 +141,13 @@ function resultCalculation(rankA: number, rankB: number, playerAHand: TCard[], p
             const suitPreference: Record<string, number> = {
                 "S": 4,
                 "H": 3,
-                "D": 2,
-                "C": 1
+                "C": 2,
+                "D": 1
             };
 
-            for (let i = (sortedANums.length - 1); i >= 0; i--) {
-                const suitA = playerAHand[i].suit;
-                const suitB = playerBHand[i].suit;
+            for (let i =0; i < sortedA.length; i++) {
+                const suitA = sortedA[i].suit;
+                const suitB = sortedB[i].suit;
                 if (suitPreference[suitA] > suitPreference[suitB]) {
                     result = "player_A";
                     break;
@@ -205,25 +224,28 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
         }
     }
 
-    const cardNumberFrequency: Record<number, number> = {};
-    hand.forEach(card => {
-        cardNumberFrequency[card.num] = (cardNumberFrequency[card.num] || 0) + 1;
-    });
-
     let fourKindNum: number | null = null;
     let threeKindNum: number | null = null;
-    let pairNum: number[] = []
+    let pairNum: number[] = [];
+
+    const cardNumberFrequency = getCardFrequency(hand)
 
     for (const [numStr, count] of Object.entries(cardNumberFrequency)) {
         const num = Number(numStr);
-        if (count === 4) {
-            fourKindNum = num;
-        } else if (count === 3) {
-            threeKindNum = num;
-        } else if (count === 2) {
-            pairNum.push(num);
+
+        switch (count) {
+            case 4:
+                fourKindNum = num;
+                break;
+            case 3:
+                threeKindNum = num;
+                break;
+            case 2:
+                pairNum.push(num);
+                break;
         }
     }
+
 
 
     if (fourKindNum) {
@@ -244,7 +266,7 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
     if (flushSuit) {
         return {
             handType: 'flush',
-            winningCards:  filterBySuit(sortedHand, flushSuit).slice(-5).map(toCardString)
+            winningCards: filterBySuit(sortedHand, flushSuit).slice(-5).map(toCardString)
         };
     }
     if (straight) {
@@ -256,7 +278,7 @@ function SixCardHandType(hand: TCard[]): THandTypeResult {
     if (threeKindNum) {
         return {
             handType: 'three_of_a_kind',
-            winningCards:  filterByNum(hand, threeKindNum).map(toCardString)
+            winningCards: filterByNum(hand, threeKindNum).map(toCardString)
         };
     }
 
